@@ -2,10 +2,10 @@ const dbConnection = require("../database");
 const bcrypt = require("bcrypt");
 
 const register = async (req, res) => {
-  const { username, email, password, node } = req.body;
+  const { username, email, password, node, role } = req.body;
 
   try {
-    if (!username || !email || !password || !node ) {
+    if (!username || !email || !password || !node || !role) {
       return res.status(400).json({
         message: "Cannot register with empty fields",
         register: false,
@@ -15,15 +15,15 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = {
-      name: username,
+      username,
       email,
-      node: node,
       password: hashedPassword,
-      
+      node,
+      role // Assign the role provided in the request
     };
 
-    const query = "INSERT INTO users (username, email, password, node) VALUES (?, ?, ?, ?)";
-    const values = [newUser.username, newUser.email, newUser.password, newUser.node];
+    const query = "INSERT INTO users (username, email, password, node, role) VALUES (?, ?, ?, ?, ?)";
+    const values = [newUser.username, newUser.email, newUser.password, newUser.node, newUser.role];
 
     await dbConnection.query(query, values);
 
@@ -47,9 +47,13 @@ const login = async (req, res) => {
 
       if (passwordMatch) {
         // Check the user's role and respond accordingly
-        if (user.status_user === 0) {
-          res.status(200).json({ message: "Admin login successful", user ,status_code: "Admin"});
-        } 
+        if (user.role === 'main-admin') {
+          res.status(200).json({ message: "Main admin login successful", user, status_code: "Main Admin" });
+        } else if (user.role === 'child-admin') {
+          res.status(200).json({ message: "Child admin login successful", user, status_code: "Child Admin" });
+        } else {
+          res.status(401).json({ message: "Invalid role", login: false });
+        }
       } else {
         res.status(401).json({ message: "Invalid password", login: false });
       }
