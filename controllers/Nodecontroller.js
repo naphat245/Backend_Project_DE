@@ -1,56 +1,82 @@
 const express = require("express");
 const dbConnection = require("../database");
 
-//post Node
+// Middleware to check user role
+const checkUserRole = (req, res, next) => {
+  const { user } = req; // Assuming user information is available in the request object
+
+  // Check if user is main admin or sub-admin
+  if (user.role === 'main-admin' || user.role === 'sub-admin') {
+    next(); // Allow access to the endpoint
+  } else {
+    res.status(403).json({ message: "Access forbidden" });
+  }
+};
+
+// Create Node
 const createNode = async (req, res) => {
   try {
     const { name, detail, owner } = req.body;
+    // Assuming owner field stores the ID of the user who created the node
     const newNode = [name, detail, owner];
 
+    // Perform access control logic here based on user's role
+    // For example, check if the user is a main admin or sub-admin of the node's owner
+    // If access is allowed, insert the new node into the database
+
     await dbConnection.query(
-      "INSERT INTO node ( name, detail, owner) VALUES (?, ?, ?)",
-      newDrink
+      "INSERT INTO node (name, detail, owner) VALUES (?, ?, ?)",
+      newNode
     );
-    res.status(200).json({ message: "successful" });
+    res.status(200).json({ message: "Node created successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error" });
   }
 };
 
-//update Node
+// Update Node
 const updateNode = async (req, res) => {
   try {
     const { name, detail, owner } = req.body;
     const newNode = [name, detail, owner, req.params.id];
 
+    // Perform access control logic here based on user's role
+    // Check if the user is a main admin or sub-admin of the node being updated
+    // If access is allowed, update the node in the database
+
     await dbConnection.query(
-      //"UPDATE drinks SET drinks_types = ? , name = ? , price = ? WHERE id = ?",
+      "UPDATE node SET name = ?, detail = ?, owner = ? WHERE id = ?",
       newNode
     );
-    res.status(200).json({ message: "successful" });
+    res.status(200).json({ message: "Node updated successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error" });
   }
 };
 
-//delete Node
+// Delete Node
 const deleteNode = async (req, res) => {
   try {
-    const newNode = [req.params.id];
+    // Perform access control logic here based on user's role
+    // Check if the user is a main admin or sub-admin of the node being deleted
+    // If access is allowed, delete the node from the database
 
-    await dbConnection.query("DELETE FROM node WHERE id=?", newNode);
-    res.status(200).json({ message: "successful" });
+    await dbConnection.query("DELETE FROM node WHERE id=?", [req.params.id]);
+    res.status(200).json({ message: "Node deleted successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error" });
   }
 };
 
-//get Node
+// Get Node
 const getNode = async (req, res) => {
   try {
+    // Perform access control logic here based on user's role
+    // Retrieve nodes that the user has access to based on their role
+
     const getNode = await dbConnection.query("SELECT * FROM node");
     res.send(getNode[0]);
   } catch (error) {
@@ -59,34 +85,14 @@ const getNode = async (req, res) => {
   }
 };
 
-// get by Type_Node
-const getDrinkByType = async (req, res) => {
-    try {
-      const getNode = await dbConnection.query(
-        "SELECT name, detail, owner FROM node WHERE node = (SELECT name FROM node WHERE name = ?)",
-        [req.params.name]
-      );
-  
-      console.log('getNode:', getNode); // Log the results for debugging
-  
-      if (getNode[0].length === 0) {
-        res.status(404).json({ message: "Node not found" });
-      } else {
-        res.send(getNode[0]);
-      }
-    } catch (error) {
-      console.error('Error in getNodeByName:', error); // Log the error for debugging
-      res.status(500).json({ message: "Internal Server Error" });
-    }
-};
-
-
-
-//get by ID_Node
+// Get Node by ID
 const getByIdNode = async (req, res) => {
   try {
+    // Perform access control logic here based on user's role
+    // Check if the user is a main admin or sub-admin of the node being fetched
+
     const getNode = await dbConnection.query(
-      "SELECT * FROM Node WHERE id=?",
+      "SELECT * FROM node WHERE id=?",
       [req.params.id]
     );
     res.send(getNode[0]);
@@ -102,5 +108,4 @@ module.exports = {
   deleteNode,
   updateNode,
   getByIdNode,
-  getNodeByName,
 };
