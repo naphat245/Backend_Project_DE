@@ -76,4 +76,25 @@ const users = async (req, res) => {
   }
 };
 
-module.exports = { register, users, login };
+const subAdmins = async (req, res) => {
+  try {
+    // Fetch sub-admins from the database
+    const [subAdmins] = await dbConnection.query("SELECT * FROM users WHERE role = 'child-admin'");
+    res.status(200).json(subAdmins);
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Error" });
+  }
+};
+
+const getUserDropdown = async (req, res) => {
+  try {
+    const users = await dbConnection.query("SELECT * FROM user");
+    res.render("index", { users });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+module.exports = { register, users, login, subAdmins, getUserDropdown };
